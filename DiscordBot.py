@@ -24,7 +24,6 @@ SoundFiles - FileID (autoincrement), SoundName (varchar(255)), FIleName (varchar
 Users - ID (autoincrement), Name (varchar(255)), CurrentGuilds (varchar(255)) [save this in the following format (data,moredata,evenmoredata)], UploadedSoundIDS [save this in the following format (data,moredata,evenmoredata)],UserID (int(255)),Permissions (int(255)) [Basic = 0, Admin = 1] 
 
 """
-voiceclients = {}
 audiofp = "Sounds/"
 ttsfp = "TTS/"
 sqlforuploadingsounds = "INSERT INTO SoundFiles (UploadGuild,FileName,Length,UploaderID,SoundName) VALUES (%s,%s,%s,%s,%s,%s) "
@@ -59,7 +58,7 @@ client = sclient()
 @app_commands.allowed_contexts(guilds=True)
 async def _joinvc(interaction : discord.Interaction, channel : discord.VoiceChannel):
     try:
-        voiceclients[interaction.guild.id] = await channel.connect()
+        Shared.VoiceClients[interaction.guild.id] = await channel.connect()
         Shared.ActiveVoiceClientChannelIDs[interaction.guild.id] = channel.id
         Shared.ActiveVoiceClientChannelNames[interaction.guild.id] = channel.name
         await interaction.response.send_message(f"Joined {channel.name}")
@@ -70,7 +69,7 @@ async def _joinvc(interaction : discord.Interaction, channel : discord.VoiceChan
 @app_commands.allowed_contexts(guilds=True)
 async def _leavevc(interaction : discord.Interaction):
     try:
-        await voiceclients[interaction.guild.id].disconnect()
+        await Shared.VoiceClients[interaction.guild.id].disconnect()
         print(interaction.guild.voice_channels)
         await interaction.response.send_message(f"left {Shared.ActiveVoiceClientChannelNames[interaction.guild.id]}")
     except Exception as e:
