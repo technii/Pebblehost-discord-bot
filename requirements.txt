@@ -1,0 +1,9 @@
+discord.py[voice]
+flask
+requests
+waitress
+mysql.connector
+PyNaCl
+ffmpeg
+mutagen
+piper-tts

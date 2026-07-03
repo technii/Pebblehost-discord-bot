@@ -1,0 +1,2 @@
+ActiveVoiceClientChannelIDs = {}
+ActiveVoiceClientChannelNames = {}
