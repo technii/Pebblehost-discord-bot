@@ -3,6 +3,9 @@ blanl
 Sounds
 Images
 TTS
+TTSvoices
+UsefulStuff.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

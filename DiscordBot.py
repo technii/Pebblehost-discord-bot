@@ -4,18 +4,15 @@ import json
 import mysql.connector
 from mutagen.mp3 import MP3
 import Shared
+import SQLcursor
 
 jsonfile = open("token.json")
 jsondict : dict = json.load(jsonfile)
 allowedcontenttypes = ["audio/mpeg3"]
 intents = discord.Intents.default()
 
-audiofp = "Sounds/"
-ttsfp = "TTS/"
-sqlforuploadingsounds = "INSERT INTO SOUNDPOINTERS (GUILDID,FILENAME,LENGTH,USERID,SOUNDNAME,FileID) VALUES (%s,%s,%s,%s,%s,%s) "
-sqlforgettingsoundnames = "select SOUNDNAME, LENGTH from SOUNDPOINTERS where GUILDID = %s"
-sqlforplayingsound = "select FILENAME,GUILDID,LENGTH from `SOUNDPOINTERS` where SOUNDNAME = %s AND GUILDID = %s"
-
+db = SQLcursor.db
+sqlcursor = SQLcursor.sqlcursor
 """
 Database Map
 
@@ -26,21 +23,13 @@ Users - ID (autoincrement), Name (varchar(255)), CurrentGuilds (varchar(255)) [s
 """
 audiofp = "Sounds/"
 ttsfp = "TTS/"
-sqlforuploadingsounds = "INSERT INTO SoundFiles (UploadGuild,FileName,Length,UploaderID,SoundName) VALUES (%s,%s,%s,%s,%s,%s) "
-sqlforgettingsoundnames = "select SOUNDNAME, LENGTH from SOUNDPOINTERS where GUILDID = %s"
-sqlforplayingsound = "select FILENAME,GUILDID,LENGTH from `SOUNDPOINTERS` where SOUNDNAME = %s AND GUILDID = %s"
+sqlforuploadingsounds = SQLcursor.sqlqueries.upload
+sqlforgettingsoundnames = SQLcursor.sqlqueries.getname
+sqlforplayingsound = SQLcursor.sqlqueries.play
 
 
 
-db = mysql.connector.connect(
-    host=jsondict.get("SQLHost"),
-    port = jsondict.get("SQLPort"),
-    user = jsondict.get("SQLUsername"),
-    password = jsondict.get("SQLPassword"),
-    database = jsondict.get("SQLUsername"),
-    connection_timeout = 10
-)
-sqlcursor = db.cursor()
+
 
 class sclient(discord.Client):
     def __init__(self) -> None:
@@ -50,6 +39,11 @@ class sclient(discord.Client):
         await self.tree.sync()
 
         print(f"we have signed in as {client.user}")
+        
+        guildss = []
+        async for guild in client.fetch_guilds():
+            guildss.append(guild.name)
+        print(f"Running on {len(guildss)} servers called {guildss}")
         
 client = sclient()
 
@@ -61,6 +55,8 @@ async def _joinvc(interaction : discord.Interaction, channel : discord.VoiceChan
         Shared.VoiceClients[interaction.guild.id] = await channel.connect()
         Shared.ActiveVoiceClientChannelIDs[interaction.guild.id] = channel.id
         Shared.ActiveVoiceClientChannelNames[interaction.guild.id] = channel.name
+        Shared.GuildsWithbotInVC.append(interaction.guild.id)
+        await Shared.CreateQueue(interaction.guild.id)
         await interaction.response.send_message(f"Joined {channel.name}")
     except Exception as e:
         await interaction.response.send_message(e,ephemeral=True)
@@ -79,15 +75,27 @@ async def _leavevc(interaction : discord.Interaction):
 @app_commands.allowed_contexts(guilds=True)
 async def _playsound(interaction : discord.Interaction, soundname : str):
     try:
-        pass
+        sqlcursor.execute(sqlforplayingsound,(soundname,interaction.guild.id))
+        resp = sqlcursor.fetchall()
+        print(resp[0][0])
+        print(Shared.GuildsWithbotInVC)
+
+        if interaction.guild.id in Shared.GuildsWithbotInVC:
+            await Shared.PlaySound(interaction.guild.id,resp[0][0],resp[0][1])
+        else:
+            await interaction.response.send_message("Not In A VC :(", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(e,ephemeral=True)
 
 @client.tree.command(name="playtts")
 @app_commands.allowed_contexts(guilds=True)
-async def _playtts(interaction : discord.Interaction, text : str, speaker : str):
+async def _playtts(interaction : discord.Interaction, text : str, speaker : Shared.TTSVoices):
     try:
-        pass
+        if interaction.guild.id in Shared.GuildsWithbotInVC:
+            await interaction.response.send_message("Done",ephemeral=True)
+            await Shared.PlayTTS(interaction.guild.id,speaker,text)
+        else:
+            await interaction.response.send_message("Not In A VC :(", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(e,ephemeral=True)
 
