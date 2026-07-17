@@ -24,7 +24,7 @@ Users - ID (autoincrement), Name (varchar(255)), CurrentGuilds (varchar(255)) [s
 audiofp = "Sounds/"
 ttsfp = "TTS/"
 sqlforuploadingsounds = SQLcursor.sqlqueries.upload
-sqlforgettingsoundnames = SQLcursor.sqlqueries.getname
+sqlforgettingsoundnames = SQLcursor.sqlqueries.getallguildsounds
 sqlforplayingsound = SQLcursor.sqlqueries.play
 
 

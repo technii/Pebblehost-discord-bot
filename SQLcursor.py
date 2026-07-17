@@ -1,4 +1,4 @@
-import mysql
+import mysql.connector
 import json
 import asyncio
 from enum import StrEnum
@@ -17,8 +17,9 @@ sqlcursor = db.cursor()
 
 class sqlqueries(StrEnum):
     upload = "INSERT INTO SoundFiles (GuildID,FileName,Length,UploaderID,SoundName) VALUES (%s,%s,%s,%s,%s) "
-    getname = "select SOUNDNAME, LENGTH from SOUNDPOINTERS where GUILDID = %s"
+    getallguildsounds = "select SOUNDNAME, LENGTH from SOUNDPOINTERS where GUILDID = %s"
     play = "select FileName,Length from `SoundFiles` where SoundName = %s AND GuildID = %s"
+    getsounddatabyname = "select * from SoundFiles where SoundName = %s "
 
 
 def main():
