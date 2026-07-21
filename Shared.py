@@ -29,7 +29,7 @@ sqlcursor = SQLcursor.sqlcursor
 db = SQLcursor.db
 CanceledItems = {}
 QueuedItems = {}
-
+Lock = asyncio.Lock()
 class TTSVoices(StrEnum):
     alan ="TTSvoices/en_GB-alan-medium.onnx"
     cori ="TTSvoices/en_GB-cori-medium.onnx"
@@ -69,6 +69,25 @@ async def QueueWorker(Queue : Queuer):
         except Exception as e:
             print(e)
 
+async def PauseQueue(GuildID: int):
+    if GuildID in GuildsWithbotInVC:
+        q : Queuer = Queues[GuildID]
+        if q.VoiceClient.is_paused() != True:
+            q.VoiceClient.pause()
+        else:
+            raise "Already Paused"
+    else:
+        raise "Not in VC"
+        
+async def UnpauseQueue(GuildID: int):
+    if GuildID in GuildsWithbotInVC:
+        q : Queuer = Queues[GuildID]
+        if q.VoiceClient.is_paused() == True:
+            q.VoiceClient.resume()
+        else:
+            raise "Not Paused"
+    else:
+        raise "Not In VC"
 async def ClearQueue(GuildID : int):
     queue : asyncio.Queue = Queues[GuildID].Queue 
     try:
@@ -84,6 +103,7 @@ async def ShutdownQueue(GuildID : int):
     QueueTasks[GuildID].cancel()
     Queues.pop(GuildID)
     QueueTasks.pop(GuildID)
+    QueuedItems[GuildID].clear()
 
 async def GetQueuedItems(GuildID: int):
     
@@ -100,12 +120,14 @@ async def PlaySound(GuildID: int, SoundFileLocation : str, Duration : str):
         raise "no active queue"
 
 async def StopSound(GuildID: int):
-    Queue: asyncio.Queue = Queues[GuildID].Queue
-    try:
-        Queue.task_done()
-        QueuedItems[GuildID].pop(0)
-    except Exception as e:
-        raise e
+    if GuildID in GuildsWithbotInVC:
+        q : Queuer = Queues[GuildID]
+        if q.VoiceClient.is_playing() == True:
+            q.VoiceClient.stop()
+        else:
+            raise "Not Playing any sound or paused"
+    else:
+        raise "Not In VC"
 
 async def PlayTTS(GuildID: int,Voice:str,Text : str):
     voice = PiperVoice.load(Voice)

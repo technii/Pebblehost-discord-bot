@@ -5,6 +5,7 @@ import mysql.connector
 from mutagen.mp3 import MP3
 import Shared
 import SQLcursor
+import datetime
 
 jsonfile = open("token.json")
 jsondict : dict = json.load(jsonfile)
@@ -57,7 +58,7 @@ async def _joinvc(interaction : discord.Interaction, channel : discord.VoiceChan
         Shared.ActiveVoiceClientChannelNames[interaction.guild.id] = channel.name
         Shared.GuildsWithbotInVC.append(interaction.guild.id)
         await Shared.CreateQueue(interaction.guild.id)
-        await interaction.response.send_message(f"Joined {channel.name}")
+        await interaction.response.send_message(f"Joined {channel.name}", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(e,ephemeral=True)
 
@@ -99,22 +100,22 @@ async def _playtts(interaction : discord.Interaction, text : str, speaker : Shar
     except Exception as e:
         await interaction.response.send_message(e,ephemeral=True)
 
-@client.tree.command(name="stop")
-@app_commands.allowed_contexts(guilds=True)
-async def _stop(interaction : discord.Interaction):
-    try:
-        pass
-    except Exception as e:
-        await interaction.response.send_message(e,ephemeral=True)
-
 @client.tree.command(name="pause")
 @app_commands.allowed_contexts(guilds=True)
 async def _pause(interaction : discord.Interaction):
     try:
-        pass
+        await Shared.PauseQueue(interaction.guild.id)
+        await interaction.response.send_message("Paused!",ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(e,ephemeral=True)
-
+@client.tree.command(name="resume")
+@app_commands.allowed_contexts(guilds=True)
+async def _resume(interaction : discord.interactions):
+    try:
+        await Shared.UnpauseQueue(interaction.guild.id)
+        await interaction.response.send_message("Resumed!",ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(e,ephemeral=True)
 @client.tree.command(name="showqueue")
 @app_commands.allowed_contexts(guilds=True)
 async def _showqueue(interaction : discord.Interaction):
@@ -127,7 +128,8 @@ async def _showqueue(interaction : discord.Interaction):
 @app_commands.allowed_contexts(guilds=True)
 async def _skip(interaction : discord.Interaction):
     try:
-        pass
+        await Shared.StopSound(interaction.guild.id)
+        await interaction.response.send_message("Skipped",ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(e,ephemeral=True)
 
@@ -136,11 +138,10 @@ async def _skip(interaction : discord.Interaction):
 async def _uploadsound(interaction : discord.Interaction, sound : discord.Attachment, soundname : str):
     try:
         if sound.content_type in allowedcontenttypes:
-            sqlcursor.execute("SELECT `FileID` FROM SOUNDPOINTERS ORDER BY FileID DESC LIMIT 1")
-            currentfileid : int  = int(str(sqlcursor.fetchone()).removeprefix("(").removesuffix(",)")) + 1
-            await sound.save(fp=audiofp + str(interaction.guild.id) + str(currentfileid)+ ".mp3")
-            vals = (str(interaction.guild.id),audiofp + str(interaction.guild.id) + str(currentfileid)+ ".mp3",str(MP3(audiofp + str(interaction.guild.id) + str(currentfileid)+ ".mp3").info.length),str(interaction.user.id),soundname,currentfileid)
-            sqlcursor.execute(sqlforuploadingsounds,vals)
+            filepath = audiofp + str(interaction.guild.id) + str(datetime.datetime.now(datetime.timezone.utc))+ ".mp3"
+            await sound.save(fp=filepath)
+            vals = (str(interaction.guild.id),filepath,str(MP3(filepath).info.length),str(interaction.user.id),soundname)
+            sqlcursor.execute(SQLcursor.sqlqueries.upload,vals)
             db.commit()
             await interaction.response.send_message("SAVED", ephemeral=True)
             
