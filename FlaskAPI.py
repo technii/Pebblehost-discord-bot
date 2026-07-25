@@ -90,13 +90,14 @@ def GetVoiceClient():
 
 @app.route("/handleoauth2loginpc")
 def HandleOauth2loginpc():
-    
-    code = request.args.get("code")
-    creds = getcreds(code)
-    resp = make_response("ForcedOauthRedirect.html", fragment = jsonify(creds))
-    resp.set_cookie("Test","Test")
-    return render_template()
-
+    try:
+        code = request.args.get("code")
+        creds = getcreds(code)
+        resp = make_response("ForcedOauthRedirect.html")
+        resp.set_cookie("Test","Test")
+        return render_template(resp, fragment = jsonify(creds))
+    except Exception as e:
+        return render_template("error.html", error=str(e))
 def getcreds(code):
     data = {
         'grant_type': 'authorization_code',
