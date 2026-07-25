@@ -68,7 +68,7 @@ async def _leavevc(interaction : discord.Interaction):
     try:
         await Shared.VoiceClients[interaction.guild.id].disconnect()
         print(interaction.guild.voice_channels)
-        await interaction.response.send_message(f"left {Shared.ActiveVoiceClientChannelNames[interaction.guild.id]}")
+        await interaction.response.send_message(f"left {Shared.ActiveVoiceClientChannelNames[interaction.guild.id]}",ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(e,ephemeral=True)
 
